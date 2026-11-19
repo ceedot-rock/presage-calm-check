@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeachAid Calm Check — study at your own pace</title>
+<meta name="description" content="A study companion page that paces its teaching to your breathing rate and HRV, read live from your webcam by the Presage SmartSpectra SDK.">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>TeachAid Calm Check</h1>
+    <p class="sub">A study companion that paces itself to you — not the other way round.</p>
+  </div>
+  <div class="badges">
+    <span id="mode-badge" class="badge">…</span>
+    <span class="badge">SmartSpectra live signals</span>
+  </div>
+</header>
+
+<main>
+  <!-- Consent first: nothing starts before this. -->
+  <section id="consent" class="card consent">
+    <h2>Before we switch the camera on</h2>
+    <p>This page reads your breathing rate, pulse, and heart-rate variability from your webcam, using the Presage SmartSpectra SDK, and uses them only to set the pace of the lesson: slower and simpler when your breathing quickens, moving on when you are settled.</p>
+    <ul>
+      <li><strong>Your video never leaves this machine.</strong> Frames are processed in memory on this computer and never recorded, uploaded, or stored.</li>
+      <li><strong>No health claims.</strong> These are study-pace signals, not a medical device. Nothing here diagnoses, treats, or scores your health.</li>
+      <li><strong>You are in control.</strong> Stop any time — the camera switches off immediately and the session summary is kept only in this page's memory.</li>
+      <li><strong>Telemetry is off.</strong> The SDK's optional session-summary telemetry is disabled in this app.</li>
+    </ul>
+    <p class="consent-note">By starting, you consent to camera use for this session only. You can also try the demo, which uses a clearly labelled simulated signal and no camera at all.</p>
+    <div class="row">
+      <button id="btn-live" class="primary">I consent — start with my camera</button>
+      <button id="btn-demo" class="secondary">Try the demo — no camera</button>
+    </div>
+    <p id="live-unavailable" class="warn hidden">Live mode needs a Presage API key on the server (PRESAGE_API_KEY). The demo below works without one.</p>
+  </section>
+
+  <section id="session" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>What the camera sees</h2>
+        <video id="preview" autoplay muted playsinline></video>
+        <p id="camera-note" class="muted">Camera preview — local only, never recorded.</p>
+        <canvas id="trace" width="560" height="120" aria-label="Breathing waveform"></canvas>
+        <p class="muted">Breathing waveform, last 10 seconds.</p>
+        <div id="hint" class="hint hidden"></div>
+        <div class="row">
+          <button id="btn-stop" class="secondary">Stop session</button>
+          <button id="btn-to-demo" class="secondary hidden">Switch to demo (no camera)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Live signals <span id="source-badge" class="badge small"></span></h2>
+        <div class="tiles">
+          <div class="tile"><span class="label">Breathing rate</span><span id="t-breath" class="value">—</span><span class="unit">breaths / min</span><span id="c-breath" class="conf"></span></div>
+          <div class="tile"><span class="label">Pulse</span><span id="t-pulse" class="value">—</span><span class="unit">beats / min</span><span id="c-pulse" class="conf"></span></div>
+          <div class="tile"><span class="label">HRV (RMSSD)</span><span id="t-hrv" class="value">—</span><span class="unit">ms, vs your baseline</span><span id="c-hrv" class="conf"></span></div>
+          <div class="tile"><span class="label">Pace</span><span id="t-pace" class="value pace">Warming up</span><span id="t-pace-note" class="unit"></span></div>
+        </div>
+        <p id="warmup-note" class="muted">Breathing reads in about 30 seconds, HRV in about 60. Until then the teacher waits — it never guesses from a cold signal.</p>
+        <div id="demo-controls" class="hidden">
+          <p class="muted"><strong>Demo scenario</strong> (simulated signal — drives the pace so you can see the teacher adapt):</p>
+          <div class="row">
+            <button data-scenario="calm" class="secondary">Calm</button>
+            <button data-scenario="focused" class="secondary">Focused</button>
+            <button data-scenario="stressed" class="secondary">Stressed</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card teacher">
+      <div class="teacher-head">
+        <h2>Your teacher</h2>
+        <span id="lesson-pos" class="muted"></span>
+      </div>
+      <h3 id="concept-title"></h3>
+      <p id="concept-body"></p>
+      <p id="concept-source" class="muted"></p>
+      <div class="row">
+        <button id="btn-next" class="primary">Next concept</button>
+        <button id="btn-break" class="secondary">Take a breathing break</button>
+      </div>
+      <p id="teacher-note" class="teacher-note"></p>
+    </div>
+
+  </section>
+
+  <section id="summary" class="card hidden">
+    <h2>Session summary</h2>
+    <p id="summary-body"></p>
+  </section>
+
+  <!-- Guided breathing break overlay -->
+  <div id="break-overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <h2>Breathing break — 60 seconds</h2>
+      <p>Follow the circle. Breathe in as it grows, out as it shrinks. There is nothing to get right; the lesson will wait.</p>
+      <div id="breath-circle"></div>
+      <p id="breath-phase">Get ready…</p>
+      <p id="breath-count" class="muted"></p>
+      <button id="btn-end-break" class="secondary">Back to the lesson</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p><strong>Study-pace signals only.</strong> TeachAid Calm Check is not a medical device. SmartSpectra metrics are offered for general wellness and informational purposes only, have not been cleared by the FDA, and may not be used for medical diagnosis or treatment.</p>
+  <p><strong>Data handling:</strong> video frames are processed in memory on this machine and never stored, shared, or uploaded. The only numbers kept are the pace timeline shown in your session summary, held in this page's memory and cleared when you stop. SDK telemetry is disabled. No account, no login, no cookies.</p>
+  <p>Built for the Presage SmartSpectra SDK Challenge. Source: <a href="https://github.com/ceedot-rock/presage-calm-check">github.com/ceedot-rock/presage-calm-check</a></p>
+</footer>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
